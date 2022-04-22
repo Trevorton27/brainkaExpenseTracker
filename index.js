@@ -1,135 +1,102 @@
 //init variables
-let expenseList = [];
-let dataRowNum = 0;
+const description = document.getElementById('description');
+const amount = document.getElementById('amount');
+const place = document.getElementById('place');
+const date = document.getElementById('date');
+const expenseList = JSON.parse(localStorage.getItem('expenseList')) || [];
+const submitButton = document.getElementById('submitButton');
+submitButton.addEventListener('submit', (e) => {
+  e.preventDefault();
 
-function createExpenseList() {
-	//capture the value for the following fields
-	let description = document.getElementById('description').value;
+  if (!date.value || !description.value || !place.value || !amount.value) {
+    alert('Please fill out all input fields before submitting. ');
+    return;
+  }
+  const newExpense = {
+    id: Date.now(),
+    item: description.value,
+    time: date.value,
+    location: place.value,
+    total: valueValidation(amount.value)
+  };
 
-	let amount = document.getElementById('amount').value;
+  createTableRow(newExpense);
+  expenseList.push(newExpense);
+  console.log('expenseList: ', expenseList);
+  pushToLocalStorage(expenseList);
 
-	let place = document.getElementById('place').value;
+  document.getElementById('form').reset();
+});
 
-	let date = document.getElementById('date').value;
-
-	newExpense = [{ id: dataRowNum, date, description, amount, place }];
-
-	expenseList = [...expenseList, newExpense];
-
-	//ensure all input fields have been populated and the amount field only allows for numbers as input
-	const validNumber = valueValidation(amount);
-
-	const fieldsPopulated = populatedInputFields(
-		date,
-		description,
-		amount,
-		place
-	);
-
-	if (validNumber == true && fieldsPopulated == true) {
-		createTableRow(dataRowNum);
-		createDataRow(dataRowNum);
-
-		dataRowNum++;
-	} else {
-		alert('Please populate all fields!');
-	}
-
-	//clear out the input fields
-	document.getElementById('description').value = '';
-	document.getElementById('amount').value = '';
-	document.getElementById('place').value = '';
-	document.getElementById('date').value = '';
+function pushToLocalStorage(array) {
+  localStorage.setItem('expenseList', JSON.stringify(array));
 }
 
-//creates a tr tag
-function createTableRow(dataNum) {
-	let dataRowNum = dataNum;
+function createTableRow(expense) {
+  const newTableRow = document.createElement('tr');
+  document.getElementById('table').appendChild(newTableRow);
 
-	let tableRow = document.createElement('tr');
-	tableRow.id = `table-row-${dataRowNum}`;
-	tableRow.addEventListener('dblclick', deleteExpense);
-	document.getElementById('test').appendChild(tableRow);
+  const dateCell = createCell(expense.time);
+  newTableRow.appendChild(dateCell);
+
+  const itemCell = createCell(expense.item);
+  newTableRow.appendChild(itemCell);
+
+  const amountCell = createCell(expense.total);
+  newTableRow.appendChild(amountCell);
+
+  const locationCell = createCell(expense.location);
+  newTableRow.appendChild(locationCell);
+
+  const deleteCell = document.createElement('td');
+  const deleteButton = createDeleteButton(expense);
+  newTableRow.appendChild(deleteCell);
+  deleteCell.appendChild(deleteButton);
+}
+
+function createCell(expense) {
+  const dataCell = document.createElement('td');
+  dataCell.textContent = expense;
+  return dataCell;
 }
 
 //creqtes a td tag
-function createDataRow(dataNum) {
-	let dataRowNum = dataNum;
-	//console.log(newExpense);
-	newExpense.forEach((expense) => {
-		let tableRowData = document.createElement('td');
-		tableRowData.id = `date-${dataRowNum}`;
-		tableRowData.innerHTML = expense.date;
-
-		let tableRowData1 = document.createElement('td');
-		tableRowData1.id = `description-${dataRowNum}`;
-		tableRowData1.innerHTML = expense.description;
-
-		let tableRowData2 = document.createElement('td');
-		tableRowData2.id = `amount-${dataRowNum}`;
-		tableRowData2.innerHTML = `$${expense.amount}`;
-
-		let tableRowData3 = document.createElement('td');
-		tableRowData3.id = `place-${dataRowNum}`;
-		tableRowData3.innerHTML = expense.place;
-
-		document
-			.getElementById(`table-row-${dataRowNum}`)
-			.appendChild(tableRowData);
-		document
-			.getElementById(`table-row-${dataRowNum}`)
-			.appendChild(tableRowData1);
-		document
-			.getElementById(`table-row-${dataRowNum}`)
-			.appendChild(tableRowData2);
-		document
-			.getElementById(`table-row-${dataRowNum}`)
-			.appendChild(tableRowData3);
-	});
-}
 
 //deletes an expense row item when it is double clicked
-function deleteExpense(e) {
-	let selectedExpense = e.target.id;
+function deleteExpense(deleteButton, id) {
+  const confirmAction = 'Are you sure you want to delete expense?';
 
-	const confirmAction = 'Are you sure you want to delete expense?';
+  if (confirm(confirmAction)) {
+    deleteButton.parentElement.parentElement.remove();
+    for (let i = 0; i < expenseList.length; i++) {
+      if (expenseList[i].id === id) {
+        expenseList.splice(i, 1);
+        pushToLocalStorage(expenseList);
+      }
+    }
+  }
+}
 
-	if (confirm(confirmAction)) {
-		//alert('Expense successfully deleted');
-
-		//capture the expense ID
-		selectedExpense = selectedExpense.split('-')[1];
-
-		expenseList.forEach((expense) => {
-			//console.log(expense[0].id);
-
-			if (expense[0].id == selectedExpense) {
-				let expenseItem = document.getElementById(
-					`table-row-${selectedExpense}`
-				);
-				expenseItem.remove(expenseList[selectedExpense]);
-				console.log(expenseList[selectedExpense]);
-
-				let indexOfExpense = (element) =>
-					element == `table-row-${selectedExpense}`;
-				let ab = expenseList.splice(expenseList.findIndex(indexOfExpense), 1);
-				//return localStorage.setItem('expenses', JSON.stringify(ab));
-			}
-		});
-	}
+function createDeleteButton(expense) {
+  const deleteButton = document.createElement('button');
+  deleteButton.textContent = 'x';
+  deleteButton.classList.add('delete-button');
+  deleteButton.addEventListener('click', () => {
+    deleteExpense(deleteButton, expense.id);
+  });
+  return deleteButton;
 }
 
 //validates that the dollar amount field only allows for numbers and 2 decimal points
 function valueValidation(amount) {
-	console.log(amount);
-	return amount.match(/^\d+(\.\d{1,2})?$/) !== null;
+  console.log(amount);
+  return amount.match(/^\d+(\.\d{1,2})?$/) !== null;
 }
 
-//ensures all fields are populated before an expense can be createed
-function populatedInputFields(date, description, amount, place) {
-	if ((date && description && amount && place) !== '') {
-		return true;
-	} else {
-		return false;
-	}
-}
+window.addEventListener('load', (e) => {
+  e.preventDefault();
+
+  expenseList.forEach((savedExpense) => {
+    createTableRow(savedExpense);
+  });
+});
