@@ -4,20 +4,25 @@ const amount = document.getElementById('amount');
 const place = document.getElementById('place');
 const date = document.getElementById('date');
 const expenseList = JSON.parse(localStorage.getItem('expenseList')) || [];
-const submitButton = document.getElementById('submitButton');
-submitButton.addEventListener('submit', (e) => {
+const form = document.getElementById('form');
+form.addEventListener('submit', (e) => {
   e.preventDefault();
 
   if (!date.value || !description.value || !place.value || !amount.value) {
     alert('Please fill out all input fields before submitting. ');
     return;
   }
+
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  });
   const newExpense = {
     id: Date.now(),
     item: description.value,
     time: date.value,
     location: place.value,
-    total: valueValidation(amount.value)
+    total: formatter.format(amount.value)
   };
 
   createTableRow(newExpense);
